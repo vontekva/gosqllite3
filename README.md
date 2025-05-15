@@ -151,8 +151,8 @@ except:
         AVG(age) as avg_age,
         MAX(age) as max_age
     FROM users
-""")
-print("Статистика:", stats)`
+""")`
+`print("Статистика:", stats)`
 
 # Закрытие соединения
 `db.close()`
