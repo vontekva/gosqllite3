@@ -1,5 +1,3 @@
-Вот обновленная документация, которая точно соответствует текущей реализации кода:
-
 # Документация gosqllite3 (v0.2)
 
 **Упрощенная библиотека для работы с SQLite3**
@@ -31,16 +29,16 @@
 Удаляет записи из таблицы.
 - `parameters` (list) - список, где первый элемент - название таблицы, а второй (при where=True) - условие WHERE.
 - `where` (bool) - если True, удаляет только записи, соответствующие условию.
-- `values` (list) - значения для подстановки в условие.
+- `values` (list) - значения для подстановки в условие. (можно с плейсхолдерами ~)
 - `auto_commit` (bool) - автосохранение изменений.
 
 ### `update(parameters: list, values: list = None, where: bool = False, auto_commit: bool = False)`
 Обновляет записи в таблице.
 - `parameters` (list) - список из 3-4 элементов:
   - название таблицы
-  - столбцы для обновления (можно с плейсхолдерами ~)
-  - новые значения
-  - условие WHERE (если where=True)
+  - столбцы для (можно с плейсхолдерами ~)
+  - новые значения (можно с плейсхолдерами ~)
+  - условие WHERE (если where=True) (можно с плейсхолдерами ~)
 - `values` (list) - значения для подстановки в плейсхолдеры.
 - `where` (bool) - если True, ожидается условие WHERE в parameters.
 - `auto_commit` (bool) - автосохранение изменений.
@@ -56,26 +54,119 @@
 Закрывает соединение с БД.
 
 # Пример использования
-```
 import gosqllite3
 
-db = gosql()
-db.connect("test.db")
+# Инициализация и подключение
+db = gosqllite3.gosql()
+db.connect("example.db")
 
-# Создание таблицы users
-db.create(["users", "id INTEGER PRIMARY KEY, name TEXT, age INTEGER"])
+# 1. СОЗДАНИЕ ТАБЛИЦ ======================================
+# Простая таблица пользователей
+db.create(["users", "id INTEGER PRIMARY KEY, name TEXT, age INTEGER, status TEXT"])
 
-# Вставка данных
-db.insert(["fd", "name = ~,age = ~"], ["Alice", 25], auto_commit=True)
+# Таблица заказов с внешним ключом
+db.create(["orders", """
+    order_id INTEGER PRIMARY KEY,
+    user_id INTEGER,
+    product TEXT,
+    price REAL,
+    date TEXT,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+"""])
 
-# Выборка данных
+# 2. ВСТАВКА ДАННЫХ =======================================
+# Простая вставка
+db.insert(["users", "name, age, status"], ["Иван", 30, "active"], auto_commit=True)
+
+# Вставка с плейсхолдерами
+db.insert(["users", "name = ~, age = ~, status = ~"], 
+          ["Мария", 25, "premium"], 
+          auto_commit=True)
+
+# Множественная вставка (в цикле)
+users_data = [
+    ["Алексей", 35, "active"],
+    ["Ольга", 28, "inactive"],
+    ["Дмитрий", 40, "premium"]
+]
+for user in users_data:
+    db.insert(["users", "name, age, status"], user)
+db.commit()  # Фиксируем все изменения
+
+# 3. ВЫБОРКА ДАННЫХ ======================================
+# Получить всех пользователей
 all_users = db.selectall(["users"])
-adults = db.selectall(["users", "age > 18"], where=True)
+print("Все пользователи:", all_users)
 
-# Обновление данных
-db.update(["users", "age", "30", "name = 'Alice'"], where=True)
+# Выборка с условием
+active_users = db.selectall(["users", "status = 'active'"], where=True)
+print("Активные пользователи:", active_users)
 
-# Удаление данных
-db.delete(["users", "age < 18"], where=True)
+# Выборка с сортировкой (через request)
+sorted_users = db.request("SELECT * FROM users ORDER BY age DESC")
+print("Пользователи по возрасту:", sorted_users)
 
-db.close()```
+# 4. ОБНОВЛЕНИЕ ДАННЫХ ===================================
+# Простое обновление
+db.update(["users", "status", "'inactive'", "age > 35"], where=True)
+
+# Обновление с плейсхолдерами
+db.update(["users", "age = ~, status = ~", "", "name = ~"],
+          values=[26, "active", "Мария"],
+          where=True)
+
+# Обновление с вычислениями
+db.update(["users", "age", "age + 1"])  # Всем +1 год
+
+# 5. УДАЛЕНИЕ ДАННЫХ =====================================
+# Удаление по условию
+db.delete(["users", "status = 'inactive'"], where=True)
+
+# Очистка таблицы (осторожно!)
+# db.delete(["users"])
+
+# 6. РАБОТА С СВЯЗАННЫМИ ТАБЛИЦАМИ ======================
+# Добавляем заказы
+db.insert(["orders", "user_id, product, price, date"],
+          [1, "Ноутбук", 999.99, "2023-10-01"])
+
+# Получаем заказы конкретного пользователя
+user_orders = db.selectall(["orders", "user_id = 1"], where=True)
+
+# 7. ТРАНЗАКЦИИ =========================================
+try:
+    # Начало транзакции (auto_commit=False)
+    db.insert(["users", "name, age"], ["Транзакция", 99], auto_commit=False)
+    db.update(["users", "status", "'test'", "name = 'Транзакция'"], 
+              where=True, auto_commit=False)
+    db.commit()  # Подтверждаем изменения
+except:
+    db.conn.rollback()  # Откатываем при ошибке
+
+# 8. АГРЕГАТНЫЕ ФУНКЦИИ ================================
+# Используем request для сложных запросов
+stats = db.request("""
+    SELECT 
+        COUNT(*) as total_users,
+        AVG(age) as avg_age,
+        MAX(age) as max_age
+    FROM users
+""")
+print("Статистика:", stats)
+
+# Закрытие соединения
+db.close()
+
+# 9. ДОПОЛНИТЕЛЬНЫЕ ПРИМЕРЫ ============================
+# Работа с датами
+db.request("INSERT INTO orders VALUES (NULL, 1, 'Телефон', 599.99, date('now'))")
+
+# Обновление с подзапросом
+db.request("""
+    UPDATE users 
+    SET status = 'gold' 
+    WHERE id IN (SELECT user_id FROM orders WHERE price > 500)
+""")
+
+# Удаление устаревших данных
+db.delete(["orders", "date < date('now', '-30 days')"], where=True)
