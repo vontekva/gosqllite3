@@ -57,8 +57,8 @@
 `import gosqllite3`
 
 # Инициализация и подключение
-`db = gosqllite3.gosql()
-db.connect("example.db")`
+`db = gosqllite3.gosql()`
+`db.connect("example.db")`
 
 # 1. СОЗДАНИЕ ТАБЛИЦ
 # Простая таблица пользователей
