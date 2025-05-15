@@ -88,8 +88,8 @@
     ["Алексей", 35, "active"],
     ["Ольга", 28, "inactive"],
     ["Дмитрий", 40, "premium"]
-]
-for user in users_data:
+]`
+`for user in users_data:
     db.insert(["users", "name, age, status"], user)
 db.commit()  # Фиксируем все изменения`
 
@@ -139,8 +139,8 @@ print("Пользователи по возрасту:", sorted_users)`
     db.insert(["users", "name, age"], ["Транзакция", 99], auto_commit=False)
     db.update(["users", "status", "'test'", "name = 'Транзакция'"], 
               where=True, auto_commit=False)
-    db.commit()  # Подтверждаем изменения
-except:
+    db.commit()  # Подтверждаем изменения`
+`except:
     db.conn.rollback()  # Откатываем при ошибке`
 
 # 8. АГРЕГАТНЫЕ ФУНКЦИИ 
