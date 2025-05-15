@@ -1,2 +1,2 @@
-# gosqllite3
+### gosqllite3
 Супер упрощенная библеотека для работы с sqllite3
