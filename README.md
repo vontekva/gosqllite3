@@ -60,113 +60,113 @@ import gosqllite3
 db = gosqllite3.gosql()
 db.connect("example.db")
 
-# 1. СОЗДАНИЕ ТАБЛИЦ ======================================
+# 1. СОЗДАНИЕ ТАБЛИЦ
 # Простая таблица пользователей
-db.create(["users", "id INTEGER PRIMARY KEY, name TEXT, age INTEGER, status TEXT"])
+`db.create(["users", "id INTEGER PRIMARY KEY, name TEXT, age INTEGER, status TEXT"])`
 
 # Таблица заказов с внешним ключом
-db.create(["orders", """
+`db.create(["orders", """
     order_id INTEGER PRIMARY KEY,
     user_id INTEGER,
     product TEXT,
     price REAL,
     date TEXT,
     FOREIGN KEY(user_id) REFERENCES users(id)
-"""])
+"""])`
 
-# 2. ВСТАВКА ДАННЫХ =======================================
+# 2. ВСТАВКА ДАННЫХ
 # Простая вставка
-db.insert(["users", "name, age, status"], ["Иван", 30, "active"], auto_commit=True)
+`db.insert(["users", "name, age, status"], ["Иван", 30, "active"], auto_commit=True)`
 
 # Вставка с плейсхолдерами
-db.insert(["users", "name = ~, age = ~, status = ~"], 
+`db.insert(["users", "name = ~, age = ~, status = ~"], 
           ["Мария", 25, "premium"], 
-          auto_commit=True)
+          auto_commit=True)`
 
 # Множественная вставка (в цикле)
-users_data = [
+`users_data = [
     ["Алексей", 35, "active"],
     ["Ольга", 28, "inactive"],
     ["Дмитрий", 40, "premium"]
 ]
 for user in users_data:
     db.insert(["users", "name, age, status"], user)
-db.commit()  # Фиксируем все изменения
+db.commit()  # Фиксируем все изменения`
 
-# 3. ВЫБОРКА ДАННЫХ ======================================
+# 3. ВЫБОРКА ДАННЫХ
 # Получить всех пользователей
-all_users = db.selectall(["users"])
-print("Все пользователи:", all_users)
+`all_users = db.selectall(["users"])
+print("Все пользователи:", all_users)`
 
 # Выборка с условием
-active_users = db.selectall(["users", "status = 'active'"], where=True)
-print("Активные пользователи:", active_users)
+`active_users = db.selectall(["users", "status = 'active'"], where=True)
+print("Активные пользователи:", active_users)`
 
 # Выборка с сортировкой (через request)
-sorted_users = db.request("SELECT * FROM users ORDER BY age DESC")
-print("Пользователи по возрасту:", sorted_users)
+`sorted_users = db.request("SELECT * FROM users ORDER BY age DESC")
+print("Пользователи по возрасту:", sorted_users)`
 
-# 4. ОБНОВЛЕНИЕ ДАННЫХ ===================================
+# 4. ОБНОВЛЕНИЕ ДАННЫХ
 # Простое обновление
-db.update(["users", "status", "'inactive'", "age > 35"], where=True)
+`db.update(["users", "status", "'inactive'", "age > 35"], where=True)`
 
 # Обновление с плейсхолдерами
-db.update(["users", "age = ~, status = ~", "", "name = ~"],
+`db.update(["users", "age = ~, status = ~", "", "name = ~"],
           values=[26, "active", "Мария"],
-          where=True)
+          where=True)`
 
 # Обновление с вычислениями
-db.update(["users", "age", "age + 1"])  # Всем +1 год
+`db.update(["users", "age", "age + 1"])  # Всем +1 год`
 
-# 5. УДАЛЕНИЕ ДАННЫХ =====================================
+# 5. УДАЛЕНИЕ ДАННЫХ
 # Удаление по условию
-db.delete(["users", "status = 'inactive'"], where=True)
+`db.delete(["users", "status = 'inactive'"], where=True)`
 
-# Очистка таблицы (осторожно!)
-# db.delete(["users"])
+# Очистка таблицы (опасно!)
+`db.delete(["users"])`
 
-# 6. РАБОТА С СВЯЗАННЫМИ ТАБЛИЦАМИ ======================
+# 6. РАБОТА С СВЯЗАННЫМИ ТАБЛИЦАМИ
 # Добавляем заказы
-db.insert(["orders", "user_id, product, price, date"],
-          [1, "Ноутбук", 999.99, "2023-10-01"])
+`db.insert(["orders", "user_id, product, price, date"],
+          [1, "Ноутбук", 999.99, "2023-10-01"])`
 
 # Получаем заказы конкретного пользователя
-user_orders = db.selectall(["orders", "user_id = 1"], where=True)
+`user_orders = db.selectall(["orders", "user_id = 1"], where=True)`
 
-# 7. ТРАНЗАКЦИИ =========================================
-try:
+# 7. ТРАНЗАКЦИИ
+`try:
     # Начало транзакции (auto_commit=False)
     db.insert(["users", "name, age"], ["Транзакция", 99], auto_commit=False)
     db.update(["users", "status", "'test'", "name = 'Транзакция'"], 
               where=True, auto_commit=False)
     db.commit()  # Подтверждаем изменения
 except:
-    db.conn.rollback()  # Откатываем при ошибке
+    db.conn.rollback()  # Откатываем при ошибке`
 
-# 8. АГРЕГАТНЫЕ ФУНКЦИИ ================================
+# 8. АГРЕГАТНЫЕ ФУНКЦИИ 
 # Используем request для сложных запросов
-stats = db.request("""
+`stats = db.request("""
     SELECT 
         COUNT(*) as total_users,
         AVG(age) as avg_age,
         MAX(age) as max_age
     FROM users
 """)
-print("Статистика:", stats)
+print("Статистика:", stats)`
 
 # Закрытие соединения
-db.close()
+`db.close()`
 
-# 9. ДОПОЛНИТЕЛЬНЫЕ ПРИМЕРЫ ============================
+# 9. ДОПОЛНИТЕЛЬНЫЕ ПРИМЕРЫ 
 # Работа с датами
-db.request("INSERT INTO orders VALUES (NULL, 1, 'Телефон', 599.99, date('now'))")
+`db.request("INSERT INTO orders VALUES (NULL, 1, 'Телефон', 599.99, date('now'))")`
 
 # Обновление с подзапросом
-db.request("""
+`db.request("""
     UPDATE users 
     SET status = 'gold' 
     WHERE id IN (SELECT user_id FROM orders WHERE price > 500)
-""")
+""")`
 
 # Удаление устаревших данных
-db.delete(["orders", "date < date('now', '-30 days')"], where=True)
+`db.delete(["orders", "date < date('now', '-30 days')"], where=True)`
