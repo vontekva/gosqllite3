@@ -1,50 +1,81 @@
-# Документация gosqllite3
+Вот обновленная документация, которая точно соответствует текущей реализации кода:
 
-**Супер упрощенная библеотека для работы с sqllite3**
+# Документация gosqllite3 (v0.2)
 
-## **Функции**  
+**Упрощенная библиотека для работы с SQLite3**
 
-ВАЖНО: в parametrs во всех функциях за исключенем request, commit, close передается список, первым значением передается **НАЗВАНИЕ ТАБЛИЦЫ**: ["tablename", "id INT"] (пример)
-### **`connect(file: str)`**  
-Открывает соединение с базой данных SQLite.  
-- **`file`** (str) – путь к файлу БД (например, `"database.db"`). Если файла нет, он будет создан 
+## Основные функции
 
-### **`create(parameters: list, auto_commit: bool = True)`**  
-Создает таблицу с указанными параметрами.  
-- **`parameters`** (list) – список столбцов в формате `["id INTEGER PRIMARY KEY", "name TEXT", "age INTEGER"]`.  
-- **`auto_commit`** (bool) – если `True` (по умолчанию), изменения сохраняются сразу
+### `connect(file: str)`
+Открывает соединение с базой данных SQLite.
+- `file` (str) - путь к файлу БД (например, "database.db"). Если файла нет, он будет создан.
 
-### **`selectall(parameters: list = None, where: str = None)`**  
-Выбирает все данные из таблицы (или с условием).  
-- **`parameters`** (list) – список столбцов для выборки (например, `["name", "age"]`). Если `None`, выбирает все (`SELECT *`).  
-- **`where`** (str) – условие в формате SQL (например, `"age > 18"`)
+### `create(parameters: list, auto_commit: bool = False)`
+Создает таблицу с указанными параметрами.
+- `parameters` (list) - список, где первый элемент - название таблицы, а второй - строка с определением столбцов (например, `["users", "id INTEGER PRIMARY KEY, name TEXT"]`).
+- `auto_commit` (bool) - если True, изменения сохраняются сразу (по умолчанию False).
 
-### **`delete(parameters: list = None, where: str = None, auto_commit: bool = True)`**  
-Удаляет записи из таблицы.  
-- **`parameters`** (list) – столбцы для уточнения удаления (редко используется).  
-- **`where`** (str) – условие (например, `"id = 5"`). **Если `None`, удаляет все записи!**  
-- **`auto_commit`** (bool) – автосохранение изменений.  
+### `insert(parameters: list, values: list, auto_commit: bool = False)`
+Добавляет новую запись в таблицу.
+- `parameters` (list) - список из 2 элементов: название таблицы и строка столбцов (можно использовать ~ как плейсхолдер, например `["users", "name~,age~"]`).
+- `values` (list) - значения для вставки (соответствуют плейсхолдерам ~).
+- `auto_commit` (bool) - автосохранение изменений.
 
-### **`insert(parameters: list, values: list, auto_commit: bool = True)`**  
-Добавляет новую запись в таблицу.  
-- **`parameters`** (list) – столбцы (например, `["name", "age"]`).  
-- **`values`** (list) – значения (например, `["Alice", 25]`).  
-- **`auto_commit`** (bool) – автосохранение.  
+### `selectall(parameters: list, where: bool = False, values: list = None)`
+Выбирает данные из таблицы.
+- `parameters` (list) - список, где первый элемент - название таблицы, а второй (при where=True) - условие WHERE.
+- `where` (bool) - если True, ожидается условие WHERE в parameters.
+- `values` (list) - значения для подстановки в условие (если используются плейсхолдеры ~).
 
-### **`update(parameters: list, where: str = None, auto_commit: bool = True)`**  
-Обновляет записи в таблице.  
-- **`parameters`** (list) – пары `["столбец = новое_значение", ...]` (например, `["age = 26", "name = 'Bob'"]`).  
-- **`where`** (str) – условие (например, `"id = 1"`). **Если `None`, обновит все записи!**  
-- **`auto_commit`** (bool) – автосохранение.  
+### `delete(parameters: list, where: bool = False, values: list = None, auto_commit: bool = False)`
+Удаляет записи из таблицы.
+- `parameters` (list) - список, где первый элемент - название таблицы, а второй (при where=True) - условие WHERE.
+- `where` (bool) - если True, удаляет только записи, соответствующие условию.
+- `values` (list) - значения для подстановки в условие.
+- `auto_commit` (bool) - автосохранение изменений.
 
-### **`request(request_text: str)`**  
-Выполняет произвольный SQL-запрос.  
-- **`request_text`** (str) – SQL-команда (например, `"ALTER TABLE users ADD COLUMN email TEXT"`).  
+### `update(parameters: list, values: list = None, where: bool = False, auto_commit: bool = False)`
+Обновляет записи в таблице.
+- `parameters` (list) - список из 3-4 элементов:
+  - название таблицы
+  - столбцы для обновления (можно с плейсхолдерами ~)
+  - новые значения
+  - условие WHERE (если where=True)
+- `values` (list) - значения для подстановки в плейсхолдеры.
+- `where` (bool) - если True, ожидается условие WHERE в parameters.
+- `auto_commit` (bool) - автосохранение изменений.
 
-### **`commit()`**  
-Сохраняет изменения в БД (если `auto_commit=False`).  
+### `request(request_text: str)`
+Выполняет произвольный SQL-запрос.
+- `request_text` (str) - SQL-команда для выполнения.
 
-### **`close()`**  
-Закрывает соединение с БД.  
+### `commit()`
+Сохраняет изменения в БД (используется при auto_commit=False в других методах).
 
+### `close()`
+Закрывает соединение с БД.
 
+# Пример использования
+```
+import gosqllite3
+
+db = gosql()
+db.connect("test.db")
+
+# Создание таблицы users
+db.create(["users", "id INTEGER PRIMARY KEY, name TEXT, age INTEGER"])
+
+# Вставка данных
+db.insert(["fd", "name = ~,age = ~"], ["Alice", 25], auto_commit=True)
+
+# Выборка данных
+all_users = db.selectall(["users"])
+adults = db.selectall(["users", "age > 18"], where=True)
+
+# Обновление данных
+db.update(["users", "age", "30", "name = 'Alice'"], where=True)
+
+# Удаление данных
+db.delete(["users", "age < 18"], where=True)
+
+db.close()```
